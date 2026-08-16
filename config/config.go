@@ -32,14 +32,14 @@ func LoadConfig() *AppConfig {
 	}
 
 	Cfg = &AppConfig{
-		DBHost:     os.Getenv("DB_HOST"),
-		DBPort:     os.Getenv("DB_PORT"),
-		DBUser:     os.Getenv("DB_USER"),
-		DBPassword: os.Getenv("DB_PASSWORD"),
-		DBName:     os.Getenv("DB_NAME"),
-		ServerPort: os.Getenv("SERVER_PORT"),
+		DBHost:     getEnv("DB_HOST", "localhost"),
+		DBPort:     mustGetEnv("DB_PORT"),
+		DBUser:     mustGetEnv("DB_USER"),
+		DBPassword: mustGetEnv("DB_PASSWORD"),
+		DBName:     getEnv("DB_NAME", "OrderManagement"),
+		ServerPort: getEnv("SERVER_PORT", "8083"),
 
-		JWTSecret:     os.Getenv("JWT_SECRET"),
+		JWTSecret:     mustGetEnv("JWT_SECRET"),
 		JWTExpireHour: getEnvInt("JWT_EXPIRE_HOURS", 60),
 	}
 
@@ -51,6 +51,17 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// mustGetEnv is for secrets (JWT_SECRET, DB_PASSWORD) that must never have
+// a hardcoded fallback baked into source code. If it's missing, fail fast
+// at startup instead of silently running with an empty/known secret.
+func mustGetEnv(key string) string {
+	v, ok := os.LookupEnv(key)
+	if !ok || v == "" {
+		log.Fatalf("config: required env var %s is not set (check your .env file)", key)
+	}
+	return v
 }
 
 func getEnvInt(key string, fallback int) int {

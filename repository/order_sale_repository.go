@@ -16,17 +16,31 @@ func NewOrderSaleRepository(db *gorm.DB) *OrderSaleRepository {
 
 // CreateWithDetails inserts an OrderSaleMaster together with its
 // OrderSaleDetail rows inside a single transaction.
+//
+// See OrderRepository.CreateWithDetails for why this batches the detail
+// inserts instead of looping Create() one row at a time - same composite
+// primary key (OrderSaleDetailNo + OrderSaleDetailID) + IDENTITY column
+// pattern that was producing duplicate-key errors on multi-line orders.
 func (r *OrderSaleRepository) CreateWithDetails(orderSale *model.OrderSaleMaster) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(orderSale).Error; err != nil {
+		// See OrderRepository.CreateWithDetails - Omit("Details") prevents
+		// GORM's association auto-save from double-inserting the detail
+		// rows (OrderSaleMaster.Details is tagged as a foreignKey association).
+		if err := tx.Omit("Details").Create(orderSale).Error; err != nil {
 			return err
 		}
+
 		for i := range orderSale.Details {
 			orderSale.Details[i].OrderSaleNo = orderSale.OrderSaleNo
-			if err := tx.Create(&orderSale.Details[i]).Error; err != nil {
+			orderSale.Details[i].OrderSaleDetailNo = 0 // let the DB assign it
+		}
+
+		if len(orderSale.Details) > 0 {
+			if err := tx.Create(&orderSale.Details).Error; err != nil {
 				return err
 			}
 		}
+
 		return nil
 	})
 }

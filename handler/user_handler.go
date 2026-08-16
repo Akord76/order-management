@@ -80,6 +80,7 @@ func (h *UserHandler) GetByID(c *gin.Context) {
 }
 
 type updateUserRequest struct {
+	Password string `json:"password"`
 	FullName string `json:"full_name"`
 	Email    string `json:"email"`
 	RoleName string `json:"role_name"`
@@ -101,11 +102,12 @@ func (h *UserHandler) Update(c *gin.Context) {
 	}
 
 	user := &model.AppUser{
-		UserID:   userID,
-		FullName: req.FullName,
-		Email:    req.Email,
-		RoleName: req.RoleName,
-		IsActive: req.IsActive,
+		UserID:       userID,
+		PasswordHash: req.Password, // Password is not updated here; it should be handled separately if needed
+		FullName:     req.FullName,
+		Email:        req.Email,
+		RoleName:     req.RoleName,
+		IsActive:     req.IsActive,
 	}
 
 	if err := h.service.Update(user); err != nil {

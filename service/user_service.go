@@ -56,6 +56,19 @@ func (s *UserService) Update(user *model.AppUser) error {
 	if user.RoleName != "" && !isValidRole(user.RoleName) {
 		return errors.New("role must be one of ADMIN, MANAGER, USER")
 	}
+	var plainPassword string
+	if user.PasswordHash != "" {
+		plainPassword = user.PasswordHash
+	}
+
+	if plainPassword != "" {
+		hash, err := auth.HashPassword(plainPassword)
+		if err != nil {
+			return err
+		}
+		user.PasswordHash = hash
+	}
+
 	return s.repo.Update(user)
 }
 

@@ -51,7 +51,6 @@ func main() {
 
 	// ---- Router ----
 	router := routes.SetupRouter(cfg.JWTSecret, h)
-
 	log.Printf("server starting on :%s", cfg.ServerPort)
 	if err := router.Run(":" + cfg.ServerPort); err != nil {
 		log.Fatalf("server failed to start: %v", err)

@@ -4,6 +4,7 @@ import (
 	"order-management/handler"
 	"order-management/middleware"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -32,6 +33,17 @@ type Handlers struct {
 //	USER    : View Order
 func SetupRouter(jwtSecret string, h *Handlers) *gin.Engine {
 	r := gin.Default()
+
+	// ============================================================
+	// PASANG CORS DI SINI (Sebelum rute apa pun didaftarkan)
+	// ============================================================
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:8084"}, // Hanya izinkan client port 8084
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
 
 	api := r.Group("/api")
 
@@ -72,9 +84,9 @@ func SetupRouter(jwtSecret string, h *Handlers) *gin.Engine {
 		orders.PUT("/:orderID/:orderNo", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager), h.Order.Update)    // Update Order
 		orders.DELETE("/:orderID/:orderNo", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager), h.Order.Delete) // Update/remove Order
 
-		// FIXED: Updated the prefix from "/:orderNo/..." to "/:orderID/:orderNo/..." to prevent wildcard conflicts
-		orders.POST("/:orderID/:orderNo/details", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager), h.Order.AddDetail)
-		orders.DELETE("/:orderID/:orderNo/details/:orderDetailNo", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager), h.Order.DeleteDetail)
+		// orders.POST("/:orderNo/details", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager), h.Order.AddDetail)
+		// orders.DELETE("/:orderNo/details/:orderDetailNo", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager), h.Order.DeleteDetail)
+	
 	}
 
 	// Order Sales follow the same MANAGER-write / everyone-read pattern.
@@ -82,18 +94,16 @@ func SetupRouter(jwtSecret string, h *Handlers) *gin.Engine {
 	{
 		orderSales.GET("", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager, middleware.RoleUser), h.OrderSale.GetAll)
 		orderSales.GET("/:orderSaleNo/:orderSaleID", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager, middleware.RoleUser), h.OrderSale.GetByID)
-
-		// FIXED: Standardized prefix to include both parameters (avoids static vs wildcard conflicts at the second segment)
-		orderSales.GET("/:orderSaleNo/:orderSaleID/details", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager, middleware.RoleUser), h.OrderSale.GetDetails)
+		orderSales.GET("/:orderSaleNo/details", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager, middleware.RoleUser), h.OrderSale.GetDetails)
 
 		orderSales.POST("", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager), h.OrderSale.Create)
 		orderSales.PUT("/:orderSaleNo/:orderSaleID", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager), h.OrderSale.Update)
 		orderSales.DELETE("/:orderSaleNo/:orderSaleID", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager), h.OrderSale.Delete)
 
-		// FIXED: Standardized prefix to include both parameters
-		orderSales.POST("/:orderSaleNo/:orderSaleID/details", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager), h.OrderSale.AddDetail)
-		orderSales.DELETE("/:orderSaleNo/:orderSaleID/details/:orderSaleDetailNo/:orderSaleDetailID", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager), h.OrderSale.DeleteDetail)
+		orderSales.POST("/:orderSaleNo/details", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager), h.OrderSale.AddDetail)
+		orderSales.DELETE("/:orderSaleNo/details/:orderSaleDetailNo/:orderSaleDetailID", middleware.RequireRoles(middleware.RoleAdmin, middleware.RoleManager), h.OrderSale.DeleteDetail)
 	}
+
 	// ============================================================
 	// Master data — any authenticated user may read/write.
 	// Tighten with middleware.RequireRoles(...) per-route if the

@@ -76,10 +76,11 @@ func (r *UserRepository) Update(user *model.AppUser) error {
 			@Action = 'UPDATE',
 			@UserID = ?,
 			@FullName = ?,
+			@PasswordHash = ?,	
 			@Email = ?,
 			@RoleName = ?,
 			@IsActive = ?`,
-		user.UserID, user.FullName, user.Email, user.RoleName, user.IsActive,
+		user.UserID, user.FullName, user.PasswordHash, user.Email, user.RoleName, user.IsActive,
 	).Error
 }
 
